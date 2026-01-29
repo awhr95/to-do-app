@@ -18,13 +18,122 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import './App.css';
 
-const API_URL = 'http://localhost:3001/api/todos';
+const API_URL = 'http://localhost:3001/api';
 
 const COLUMNS = [
   { id: 'new', title: 'New' },
   { id: 'working', title: 'Working On' },
   { id: 'complete', title: 'Complete' },
 ];
+
+// Auth helpers
+function getToken() {
+  return localStorage.getItem('token');
+}
+
+function setToken(token) {
+  localStorage.setItem('token', token);
+}
+
+function removeToken() {
+  localStorage.removeItem('token');
+}
+
+function authHeaders() {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// Auth Forms Component
+function AuthForms({ onLogin }) {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    const endpoint = isLogin ? '/auth/login' : '/auth/signup';
+    const body = isLogin ? { email, password } : { email, password, name };
+
+    try {
+      const res = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Authentication failed');
+      }
+
+      setToken(data.token);
+      onLogin(data.user);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="auth-container">
+      <div className="auth-card">
+        <h1>Kanban Board</h1>
+        <h2>{isLogin ? 'Login' : 'Sign Up'}</h2>
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          {!isLogin && (
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Name"
+              className="auth-input"
+            />
+          )}
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            className="auth-input"
+            required
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            className="auth-input"
+            required
+            minLength={6}
+          />
+
+          {error && <p className="auth-error">{error}</p>}
+
+          <button type="submit" className="auth-submit" disabled={loading}>
+            {loading ? 'Please wait...' : isLogin ? 'Login' : 'Sign Up'}
+          </button>
+        </form>
+
+        <p className="auth-switch">
+          {isLogin ? "Don't have an account? " : 'Already have an account? '}
+          <button onClick={() => { setIsLogin(!isLogin); setError(''); }} className="auth-switch-btn">
+            {isLogin ? 'Sign Up' : 'Login'}
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+}
 
 function TodoCard({ todo, onUpdate, onDelete, isDragging }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -141,7 +250,7 @@ function KanbanColumn({ column, todos, onUpdate, onDelete, activeId }) {
   );
 }
 
-function App() {
+function KanbanBoard({ user, onLogout }) {
   const [todos, setTodos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState(null);
@@ -165,7 +274,13 @@ function App() {
 
   async function fetchTodos() {
     try {
-      const res = await fetch(API_URL);
+      const res = await fetch(`${API_URL}/todos`, {
+        headers: authHeaders(),
+      });
+      if (res.status === 401 || res.status === 403) {
+        onLogout();
+        return;
+      }
       const data = await res.json();
       setTodos(data);
     } catch (err) {
@@ -180,9 +295,9 @@ function App() {
     if (!newTodo.title.trim()) return;
 
     try {
-      const res = await fetch(API_URL, {
+      const res = await fetch(`${API_URL}/todos`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(newTodo),
       });
       const todo = await res.json();
@@ -200,9 +315,9 @@ function App() {
 
   async function updateTodo(id, updates) {
     try {
-      const res = await fetch(`${API_URL}/${id}`, {
+      const res = await fetch(`${API_URL}/todos/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(updates),
       });
       const updated = await res.json();
@@ -214,7 +329,10 @@ function App() {
 
   async function deleteTodo(id) {
     try {
-      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      await fetch(`${API_URL}/todos/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
       setTodos(todos.filter(t => t.id !== id));
     } catch (err) {
       console.error('Failed to delete todo:', err);
@@ -232,13 +350,9 @@ function App() {
     if (!over) return;
 
     const draggedId = active.id;
-    const overId = over.id;
-
-    // Find the dragged todo's current status in state
     const draggedTodo = todos.find(t => t.id === draggedId);
     if (!draggedTodo) return;
 
-    // The status was already updated in handleDragOver, so just persist to server
     updateTodo(draggedId, { status: draggedTodo.status });
   }
 
@@ -252,22 +366,18 @@ function App() {
     const draggedTodo = todos.find(t => t.id === draggedId);
     if (!draggedTodo) return;
 
-    // Determine the target column
     let targetStatus = null;
 
-    // Check if hovering over a column directly
     const column = COLUMNS.find(c => c.id === overId);
     if (column) {
       targetStatus = column.id;
     } else {
-      // Check if hovering over another todo card
       const overTodo = todos.find(t => t.id === overId);
       if (overTodo) {
         targetStatus = overTodo.status;
       }
     }
 
-    // Update the status if it changed
     if (targetStatus && draggedTodo.status !== targetStatus) {
       setTodos(prevTodos =>
         prevTodos.map(t =>
@@ -285,9 +395,13 @@ function App() {
     <div className="app">
       <header className="app-header">
         <h1>Kanban Board</h1>
-        <button onClick={() => setShowForm(!showForm)} className="add-btn">
-          {showForm ? 'Cancel' : '+ Add Task'}
-        </button>
+        <div className="header-actions">
+          <span className="user-name">Hi, {user.name}</span>
+          <button onClick={() => setShowForm(!showForm)} className="add-btn">
+            {showForm ? 'Cancel' : '+ Add Task'}
+          </button>
+          <button onClick={onLogout} className="logout-btn">Logout</button>
+        </div>
       </header>
 
       {showForm && (
@@ -353,6 +467,59 @@ function App() {
       </DndContext>
     </div>
   );
+}
+
+function App() {
+  const [user, setUser] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  async function checkAuth() {
+    const token = getToken();
+    if (!token) {
+      setCheckingAuth(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/auth/me`, {
+        headers: authHeaders(),
+      });
+
+      if (res.ok) {
+        const userData = await res.json();
+        setUser(userData);
+      } else {
+        removeToken();
+      }
+    } catch (err) {
+      removeToken();
+    } finally {
+      setCheckingAuth(false);
+    }
+  }
+
+  function handleLogin(userData) {
+    setUser(userData);
+  }
+
+  function handleLogout() {
+    removeToken();
+    setUser(null);
+  }
+
+  if (checkingAuth) {
+    return <div className="loading">Loading...</div>;
+  }
+
+  if (!user) {
+    return <AuthForms onLogin={handleLogin} />;
+  }
+
+  return <KanbanBoard user={user} onLogout={handleLogout} />;
 }
 
 export default App;
