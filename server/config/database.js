@@ -25,10 +25,10 @@ const config = {
   },
 
   production: {
-    username: process.env.MYSQLUSER,
-    password: process.env.MYSQLPASSWORD,
-    database: process.env.MYSQLDATABASE,
-    host: process.env.MYSQLHOST,
+    username: process.env.MYSQLUSER, // 'root'
+    password: process.env.MYSQL_ROOT_PASSWORD, // <-- fix this
+    database: process.env.MYSQL_DATABASE, // 'railway'
+    host: process.env.MYSQLHOST, // 'mysql.railway.internal'
     port: process.env.MYSQLPORT || 3306,
     dialect: "mysql",
     logging: false,
