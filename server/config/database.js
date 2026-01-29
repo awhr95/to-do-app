@@ -1,32 +1,43 @@
-import 'dotenv/config';
+import "dotenv/config";
+
+const getEnv = (railwayVar, localVar) =>
+  process.env[railwayVar] || process.env[localVar];
 
 const config = {
   development: {
-    username: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'donext_dev',
-    host: process.env.DB_HOST || '127.0.0.1',
-    port: process.env.DB_PORT || 3306,
-    dialect: 'mysql',
+    username: getEnv("MYSQLUSER", "DB_USER") || "root",
+    password: getEnv("MYSQLPASSWORD", "DB_PASSWORD") || "",
+    database: getEnv("MYSQLDATABASE", "DB_NAME") || "donext_dev",
+    host: getEnv("MYSQLHOST", "DB_HOST") || "127.0.0.1",
+    port: getEnv("MYSQLPORT", "DB_PORT") || 3306,
+    dialect: "mysql",
     logging: false,
   },
+
   test: {
-    username: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'donext_test',
-    host: process.env.DB_HOST || '127.0.0.1',
-    port: process.env.DB_PORT || 3306,
-    dialect: 'mysql',
+    username: getEnv("MYSQLUSER", "DB_USER") || "root",
+    password: getEnv("MYSQLPASSWORD", "DB_PASSWORD") || "",
+    database: getEnv("MYSQLDATABASE", "DB_NAME") || "donext_test",
+    host: getEnv("MYSQLHOST", "DB_HOST") || "127.0.0.1",
+    port: getEnv("MYSQLPORT", "DB_PORT") || 3306,
+    dialect: "mysql",
     logging: false,
   },
+
   production: {
-    username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT || 3306,
-    dialect: 'mysql',
+    username: process.env.MYSQLUSER,
+    password: process.env.MYSQLPASSWORD,
+    database: process.env.MYSQLDATABASE,
+    host: process.env.MYSQLHOST,
+    port: process.env.MYSQLPORT || 3306,
+    dialect: "mysql",
     logging: false,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+    },
   },
 };
 
