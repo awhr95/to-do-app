@@ -36,10 +36,14 @@ app.get('/api/todos', async (req, res) => {
 // Create a todo
 app.post('/api/todos', async (req, res) => {
   const todos = await readTodos();
+  const today = new Date().toISOString().split('T')[0];
   const newTodo = {
     id: Date.now(),
-    text: req.body.text,
-    completed: false,
+    title: req.body.title || '',
+    description: req.body.description || '',
+    status: 'new',
+    startDate: today,
+    dueDate: req.body.dueDate || today,
     createdAt: new Date().toISOString()
   };
   todos.push(newTodo);
