@@ -137,7 +137,7 @@ app.post('/api/todos', authenticateToken, async (req, res) => {
     userId: req.user.id,
     title: req.body.title || '',
     description: req.body.description || '',
-    status: 'new',
+    status: req.body.status || 'new',
     startDate: today,
     dueDate: req.body.dueDate || today,
     createdAt: new Date().toISOString()
