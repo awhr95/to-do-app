@@ -2,7 +2,11 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { sequelize, User, Todo } from './models/index.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -173,6 +177,13 @@ app.delete('/api/todos/:id', authenticateToken, async (req, res) => {
     console.error('Delete todo error:', err);
     res.status(500).json({ error: 'Failed to delete todo' });
   }
+});
+
+// Serve React frontend in production
+const clientDist = path.join(__dirname, '..', 'client', 'dist');
+app.use(express.static(clientDist));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(clientDist, 'index.html'));
 });
 
 // Database sync and server start
