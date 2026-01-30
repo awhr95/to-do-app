@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FiMail, FiLock, FiUser, FiLogIn, FiUserPlus } from 'react-icons/fi';
 import { login, signup, setToken } from '../utils/api';
 
 export default function AuthForms({ onLogin }) {
@@ -36,36 +37,51 @@ export default function AuthForms({ onLogin }) {
 
         <form onSubmit={handleSubmit} className="auth-form">
           {!isLogin && (
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Name"
-              className="auth-input"
-            />
+            <div className="auth-input-group">
+              <FiUser className="auth-input-icon" size={18} />
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Name"
+                className="auth-input"
+              />
+            </div>
           )}
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            className="auth-input"
-            required
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            className="auth-input"
-            required
-            minLength={6}
-          />
+          <div className="auth-input-group">
+            <FiMail className="auth-input-icon" size={18} />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className="auth-input"
+              required
+            />
+          </div>
+          <div className="auth-input-group">
+            <FiLock className="auth-input-icon" size={18} />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              className="auth-input"
+              required
+              minLength={6}
+            />
+          </div>
 
           {error && <p className="auth-error">{error}</p>}
 
-          <button type="submit" className="auth-submit" disabled={loading}>
-            {loading ? 'Please wait...' : isLogin ? 'Login' : 'Sign Up'}
+          <button type="submit" className="auth-submit icon-btn" disabled={loading}>
+            {loading ? (
+              'Please wait...'
+            ) : isLogin ? (
+              <><FiLogIn size={18} /> Login</>
+            ) : (
+              <><FiUserPlus size={18} /> Sign Up</>
+            )}
           </button>
         </form>
 

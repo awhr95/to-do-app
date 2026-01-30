@@ -2,6 +2,7 @@ import { Sequelize } from 'sequelize';
 import config from '../config/database.js';
 import UserModel from './User.js';
 import TodoModel from './Todo.js';
+import ProjectModel from './Project.js';
 
 const env = process.env.NODE_ENV || 'development';
 const dbConfig = config[env];
@@ -20,9 +21,16 @@ const sequelize = new Sequelize(
 
 const User = UserModel(sequelize);
 const Todo = TodoModel(sequelize);
+const Project = ProjectModel(sequelize);
 
 // Associations
 User.hasMany(Todo, { foreignKey: 'userId', as: 'todos' });
 Todo.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
-export { sequelize, User, Todo };
+User.hasMany(Project, { foreignKey: 'userId', as: 'projects' });
+Project.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+Project.hasMany(Todo, { foreignKey: 'projectId', as: 'todos' });
+Todo.belongsTo(Project, { foreignKey: 'projectId', as: 'project' });
+
+export { sequelize, User, Todo, Project };

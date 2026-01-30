@@ -4,7 +4,7 @@ import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { sequelize, User, Todo } from './models/index.js';
+import { sequelize, User, Todo, Project } from './models/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -111,11 +111,81 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
   }
 });
 
+// Project routes (protected)
+app.get('/api/projects', authenticateToken, async (req, res) => {
+  try {
+    const projects = await Project.findAll({
+      where: { userId: req.user.id },
+      order: [['createdAt', 'ASC']],
+    });
+    res.json(projects);
+  } catch (err) {
+    console.error('Get projects error:', err);
+    res.status(500).json({ error: 'Failed to fetch projects' });
+  }
+});
+
+app.post('/api/projects', authenticateToken, async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Project name is required' });
+    }
+    const project = await Project.create({
+      userId: req.user.id,
+      name: name.trim(),
+    });
+    res.status(201).json(project);
+  } catch (err) {
+    console.error('Create project error:', err);
+    res.status(500).json({ error: 'Failed to create project' });
+  }
+});
+
+app.put('/api/projects/:id', authenticateToken, async (req, res) => {
+  try {
+    const project = await Project.findOne({
+      where: { id: req.params.id, userId: req.user.id },
+    });
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    const { name } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Project name is required' });
+    }
+    await project.update({ name: name.trim() });
+    res.json(project);
+  } catch (err) {
+    console.error('Update project error:', err);
+    res.status(500).json({ error: 'Failed to update project' });
+  }
+});
+
+app.delete('/api/projects/:id', authenticateToken, async (req, res) => {
+  try {
+    const result = await Project.destroy({
+      where: { id: req.params.id, userId: req.user.id },
+    });
+    if (result === 0) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+    res.status(204).send();
+  } catch (err) {
+    console.error('Delete project error:', err);
+    res.status(500).json({ error: 'Failed to delete project' });
+  }
+});
+
 // Todo routes (protected)
 app.get('/api/todos', authenticateToken, async (req, res) => {
   try {
+    const where = { userId: req.user.id };
+    if (req.query.projectId) {
+      where.projectId = req.query.projectId;
+    }
     const todos = await Todo.findAll({
-      where: { userId: req.user.id },
+      where,
       order: [['createdAt', 'ASC']],
     });
     res.json(todos);
@@ -135,6 +205,7 @@ app.post('/api/todos', authenticateToken, async (req, res) => {
       status: req.body.status || 'new',
       startDate: today,
       dueDate: req.body.dueDate || today,
+      projectId: req.body.projectId || null,
     });
     res.status(201).json(todo);
   } catch (err) {

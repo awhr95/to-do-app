@@ -37,6 +37,14 @@ export default function(sequelize) {
       type: DataTypes.DATEONLY,
       allowNull: false,
     },
+    projectId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: 'projects',
+        key: 'id',
+      },
+    },
   }, {
     tableName: 'todos',
     timestamps: true,

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { FiPlus, FiX } from 'react-icons/fi';
 import TodoCard from './TodoCard';
 
 function getToday() {
@@ -43,7 +44,7 @@ export default function KanbanColumn({
             onClick={() => onToggleAddForm(isAddFormOpen ? null : column.id)}
             className="column-add-btn"
           >
-            {isAddFormOpen ? '×' : '+'}
+            {isAddFormOpen ? <FiX size={14} /> : <FiPlus size={14} />}
           </button>
         </div>
       </div>

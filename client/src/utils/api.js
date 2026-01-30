@@ -49,9 +49,46 @@ export async function getCurrentUser() {
   return res.json();
 }
 
+// Projects API
+export async function fetchProjects() {
+  const res = await fetch(`${API_URL}/projects`, {
+    headers: authHeaders(),
+  });
+  if (res.status === 401 || res.status === 403) {
+    throw new Error("Unauthorized");
+  }
+  return res.json();
+}
+
+export async function createProject(name) {
+  const res = await fetch(`${API_URL}/projects`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ name }),
+  });
+  return res.json();
+}
+
+export async function updateProject(id, name) {
+  const res = await fetch(`${API_URL}/projects/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ name }),
+  });
+  return res.json();
+}
+
+export async function deleteProject(id) {
+  await fetch(`${API_URL}/projects/${id}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+}
+
 // Todos API
-export async function fetchTodos() {
-  const res = await fetch(`${API_URL}/todos`, {
+export async function fetchTodos(projectId) {
+  const params = projectId ? `?projectId=${projectId}` : '';
+  const res = await fetch(`${API_URL}/todos${params}`, {
     headers: authHeaders(),
   });
   if (res.status === 401 || res.status === 403) {
