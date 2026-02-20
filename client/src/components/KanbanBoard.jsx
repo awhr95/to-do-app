@@ -9,7 +9,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
-import { FiPlus, FiX, FiLogOut, FiMoreVertical } from 'react-icons/fi';
+import { FiPlus, FiX, FiLogOut } from 'react-icons/fi';
 import KanbanColumn from './KanbanColumn';
 import ProjectSelector from './ProjectSelector';
 import { COLUMNS } from '../utils/constants';
@@ -24,7 +24,11 @@ export default function KanbanBoard({ user, onLogout }) {
   const [addFormColumn, setAddFormColumn] = useState(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -111,8 +115,8 @@ export default function KanbanBoard({ user, onLogout }) {
     );
 
     try {
-      const updated = await api.toggleTodoImportant(id);
-      setTodos(prev => prev.map(t => (t.id === id ? updated : t)));
+      await api.toggleTodoImportant(id);
+      // Trust the optimistic update - don't replace with server response
     } catch (err) {
       // Revert on error
       setTodos(prev =>
@@ -309,9 +313,8 @@ export default function KanbanBoard({ user, onLogout }) {
 
         <DragOverlay>
           {activeTodo ? (
-            <div className="todo-card dragging">
+            <div className={`todo-card dragging ${activeTodo.important ? 'important' : ''}`}>
               <div className="card-header">
-                <FiMoreVertical className="drag-handle" size={16} />
                 <h3 className="card-title">{activeTodo.title || 'Untitled'}</h3>
               </div>
               {activeTodo.description && (

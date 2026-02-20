@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FiMoreVertical, FiEdit2, FiTrash2, FiSave, FiX, FiCalendar, FiClock, FiAlertCircle, FiStar } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiSave, FiX, FiCalendar, FiClock, FiAlertCircle, FiStar } from 'react-icons/fi';
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const [year, month, day] = dateStr.split('-');
+  return `${day}-${month}`;
+}
 
 export default function TodoCard({ todo, onUpdate, onDelete, onToggleImportant, isDragging }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -78,13 +84,13 @@ export default function TodoCard({ todo, onUpdate, onDelete, onToggleImportant, 
       ref={setNodeRef}
       style={style}
       className={`todo-card ${isOverdue ? 'overdue' : ''} ${todo.important ? 'important' : ''}`}
+      {...attributes}
+      {...listeners}
     >
       <div className="card-header">
-        <span className="drag-handle" {...attributes} {...listeners}>
-          <FiMoreVertical size={16} />
-        </span>
         <h3 className="card-title">{todo.title || 'Untitled'}</h3>
         <button
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={() => onToggleImportant(todo.id)}
           className={`important-btn ${todo.important ? 'active' : ''}`}
           title={todo.important ? 'Remove importance' : 'Mark as important'}
@@ -95,17 +101,17 @@ export default function TodoCard({ todo, onUpdate, onDelete, onToggleImportant, 
       {todo.description && <p className="card-description">{todo.description}</p>}
       <div className="card-dates">
         <span className="start-date">
-          <FiClock size={11} /> {todo.startDate}
+          <FiClock size={11} /> {formatDate(todo.startDate)}
         </span>
         <span className={`due-date ${isOverdue ? 'overdue-text' : ''}`}>
-          {isOverdue ? <FiAlertCircle size={11} /> : <FiCalendar size={11} />} {todo.dueDate}
+          {isOverdue ? <FiAlertCircle size={11} /> : <FiCalendar size={11} />} {formatDate(todo.dueDate)}
         </span>
       </div>
       <div className="card-actions">
-        <button onClick={() => setIsEditing(true)} className="edit-btn icon-btn">
+        <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setIsEditing(true)} className="edit-btn icon-btn">
           <FiEdit2 size={13} />
         </button>
-        <button onClick={() => onDelete(todo.id)} className="delete-btn icon-btn">
+        <button onPointerDown={(e) => e.stopPropagation()} onClick={() => onDelete(todo.id)} className="delete-btn icon-btn">
           <FiTrash2 size={13} />
         </button>
       </div>
