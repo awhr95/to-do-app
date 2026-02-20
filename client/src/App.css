@@ -405,12 +405,13 @@ body {
 }
 
 .delete-btn {
-  background: #f8d7da;
-  color: #721c24;
+  background: none;
+  color: #9ca3af;
 }
 
 .delete-btn:hover {
-  background: #f5c6cb;
+  background: none;
+  color: #dc3545;
 }
 
 /* Editing Card */
