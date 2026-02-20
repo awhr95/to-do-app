@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -12,189 +12,46 @@ import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
 import KanbanColumn from './KanbanColumn';
 import Sidebar from './Sidebar';
 import { COLUMNS } from '../utils/constants';
+import useTodos from '../hooks/useTodos';
+import useProjects from '../hooks/useProjects';
 import * as api from '../utils/api';
 import '../styles/KanbanBoard.css';
 
 export default function KanbanBoard({ user, onLogout }) {
-  const [todos, setTodos] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [todosLoading, setTodosLoading] = useState(false);
   const [activeId, setActiveId] = useState(null);
   const [addFormColumn, setAddFormColumn] = useState(null);
 
-  // Ref to always have access to latest todos (fixes race condition in drag handlers)
-  const todosRef = useRef(todos);
-  useEffect(() => {
-    todosRef.current = todos;
-  }, [todos]);
+  const {
+    projects,
+    selectedProjectId,
+    selectProject,
+    createProject,
+    updateProject,
+    deleteProject,
+  } = useProjects(onLogout);
+
+  const {
+    todos,
+    setTodos,
+    todosRef,
+    initialLoading,
+    addTodo,
+    updateTodo,
+    deleteTodo,
+    toggleImportant,
+    loadTodos,
+  } = useTodos(selectedProjectId, onLogout);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
+      activationConstraint: { distance: 5 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
-
-  useEffect(() => {
-    loadTodos();
-  }, [selectedProjectId]);
-
-  async function loadProjects() {
-    try {
-      const data = await api.fetchProjects();
-      setProjects(data);
-      if (data.length > 0) {
-        setSelectedProjectId(data[0].id);
-      } else {
-        setInitialLoading(false);
-      }
-    } catch (err) {
-      if (err.message === 'Unauthorized') {
-        onLogout();
-      } else {
-        console.error('Failed to fetch projects:', err);
-        setInitialLoading(false);
-      }
-    }
-  }
-
-  async function loadTodos() {
-    try {
-      setTodosLoading(true);
-      const data = await api.fetchTodos(selectedProjectId);
-      setTodos(data);
-    } catch (err) {
-      if (err.message === 'Unauthorized') {
-        onLogout();
-      } else {
-        console.error('Failed to fetch todos:', err);
-      }
-    } finally {
-      setTodosLoading(false);
-      setInitialLoading(false);
-    }
-  }
-
-  async function handleAddTodo(todoData) {
-    try {
-      const todo = await api.createTodo({
-        ...todoData,
-        projectId: selectedProjectId,
-      });
-      setTodos(prev => [...prev, todo]);
-      return todo;
-    } catch (err) {
-      console.error('Failed to add todo:', err);
-    }
-  }
-
-  async function handleUpdateTodo(id, updates) {
-    try {
-      const updated = await api.updateTodo(id, updates);
-      setTodos(prev => prev.map(t => (t.id === id ? updated : t)));
-    } catch (err) {
-      console.error('Failed to update todo:', err);
-    }
-  }
-
-  async function handleDeleteTodo(id) {
-    try {
-      await api.deleteTodo(id);
-      setTodos(prev => prev.filter(t => t.id !== id));
-    } catch (err) {
-      console.error('Failed to delete todo:', err);
-    }
-  }
-
-  async function handleToggleImportant(id) {
-    const todo = todosRef.current.find(t => t.id === id);
-    if (!todo) return;
-
-    const newImportant = !todo.important;
-
-    // If starring (not unstarring), bump to top of column
-    if (newImportant) {
-      // Set position to -1 to sort to top, then normalize positions
-      setTodos(prev => {
-        const updated = prev.map(t =>
-          t.id === id ? { ...t, important: true, position: -1 } : t
-        );
-        // Normalize positions within the column
-        const columnTodos = updated
-          .filter(t => t.status === todo.status)
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-        const normalizedIds = columnTodos.map((t, i) => ({ id: t.id, position: i }));
-        return updated.map(t => {
-          const norm = normalizedIds.find(n => n.id === t.id);
-          return norm ? { ...t, position: norm.position } : t;
-        });
-      });
-
-      // Persist to server
-      try {
-        await api.toggleTodoImportant(id);
-        // Also persist the new positions
-        const columnTodos = todosRef.current
-          .filter(t => t.status === todo.status)
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-        const reorderItems = columnTodos.map((t, i) => ({ id: t.id, position: i }));
-        await api.reorderTodos(reorderItems);
-      } catch (err) {
-        console.error('Failed to toggle important:', err);
-        // Revert on error
-        setTodos(prev => prev.map(t => (t.id === id ? { ...t, important: false } : t)));
-      }
-    } else {
-      // Just unstar, don't change position
-      setTodos(prev => prev.map(t => (t.id === id ? { ...t, important: false } : t)));
-      try {
-        await api.toggleTodoImportant(id);
-      } catch (err) {
-        console.error('Failed to toggle important:', err);
-        setTodos(prev => prev.map(t => (t.id === id ? { ...t, important: true } : t)));
-      }
-    }
-  }
-
-  const handleCreateProject = useCallback(async (name) => {
-    try {
-      const project = await api.createProject(name);
-      setProjects(prev => [...prev, project]);
-      setSelectedProjectId(project.id);
-    } catch (err) {
-      console.error('Failed to create project:', err);
-    }
-  }, []);
-
-  const handleUpdateProject = useCallback(async (id, name) => {
-    try {
-      const updated = await api.updateProject(id, name);
-      setProjects(prev => prev.map(p => (p.id === id ? updated : p)));
-    } catch (err) {
-      console.error('Failed to update project:', err);
-    }
-  }, []);
-
-  const handleDeleteProject = useCallback(async (id) => {
-    try {
-      await api.deleteProject(id);
-      setProjects(prev => prev.filter(p => p.id !== id));
-      setSelectedProjectId(prev => prev === id ? null : prev);
-    } catch (err) {
-      console.error('Failed to delete project:', err);
-    }
-  }, []);
-
+  // Drag handlers
   function handleDragStart(event) {
     setActiveId(event.active.id);
   }
@@ -205,33 +62,26 @@ export default function KanbanBoard({ user, onLogout }) {
 
     if (!over) return;
 
-    // Use ref to get latest state (fixes race condition with fast drags)
     const currentTodos = todosRef.current;
     const draggedTodo = currentTodos.find(t => t.id === active.id);
     if (!draggedTodo) return;
 
-    // Get todos in the same column (using latest state)
     const columnTodos = currentTodos.filter(t => t.status === draggedTodo.status);
-
-    // Build reorder items from current array order
     const reorderItems = columnTodos.map((todo, index) => ({
       id: todo.id,
       position: index,
     }));
 
-    // Update local state with normalized positions
     setTodos(prev => prev.map(t => {
       const item = reorderItems.find(r => r.id === t.id);
       return item ? { ...t, position: item.position } : t;
     }));
 
-    // Persist to server
     try {
       await api.updateTodo(active.id, { status: draggedTodo.status });
       await api.reorderTodos(reorderItems);
     } catch (err) {
       console.error('Failed to persist drag:', err);
-      // Reload on error to get correct state
       loadTodos();
     }
   }
@@ -240,7 +90,6 @@ export default function KanbanBoard({ user, onLogout }) {
     const { active, over } = event;
     if (!over) return;
 
-    // Use functional update to always work with latest state
     setTodos(prev => {
       const draggedTodo = prev.find(t => t.id === active.id);
       if (!draggedTodo) return prev;
@@ -290,8 +139,7 @@ export default function KanbanBoard({ user, onLogout }) {
     });
   }
 
-  // Memoize sidebar callbacks to prevent unnecessary re-renders
-  const handleSelectProject = useCallback((id) => setSelectedProjectId(id), []);
+  // Memoized callbacks for Sidebar
   const handleAddTask = useCallback(() => setAddFormColumn('new'), []);
 
   if (initialLoading) {
@@ -306,10 +154,10 @@ export default function KanbanBoard({ user, onLogout }) {
         user={user}
         projects={projects}
         selectedProjectId={selectedProjectId}
-        onSelect={handleSelectProject}
-        onCreate={handleCreateProject}
-        onUpdate={handleUpdateProject}
-        onDelete={handleDeleteProject}
+        onSelect={selectProject}
+        onCreate={createProject}
+        onUpdate={updateProject}
+        onDelete={deleteProject}
         onLogout={onLogout}
         onAddTask={handleAddTask}
       />
@@ -328,10 +176,10 @@ export default function KanbanBoard({ user, onLogout }) {
                 key={column.id}
                 column={column}
                 todos={todos}
-                onUpdate={handleUpdateTodo}
-                onDelete={handleDeleteTodo}
-                onToggleImportant={handleToggleImportant}
-                onAdd={handleAddTodo}
+                onUpdate={updateTodo}
+                onDelete={deleteTodo}
+                onToggleImportant={toggleImportant}
+                onAdd={addTodo}
                 activeId={activeId}
                 isAddFormOpen={addFormColumn === column.id}
                 onToggleAddForm={setAddFormColumn}
