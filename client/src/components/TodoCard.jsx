@@ -1,12 +1,27 @@
 import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FiEdit2, FiTrash2, FiSave, FiX, FiCalendar, FiClock, FiAlertCircle, FiStar } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiSave, FiX, FiCalendar, FiAlertCircle, FiStar } from 'react-icons/fi';
 
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  const [year, month, day] = dateStr.split('-');
-  return `${day}-${month}`;
+function getOrdinalSuffix(day) {
+  if (day > 3 && day < 21) return 'th';
+  switch (day % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
+}
+
+function formatDueDate(dateStr) {
+  if (!dateStr) return null;
+  const date = new Date(dateStr + 'T00:00:00');
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const dayName = days[date.getDay()];
+  const dayNum = date.getDate();
+  const monthName = months[date.getMonth()];
+  return `${dayName} ${dayNum}${getOrdinalSuffix(dayNum)} ${monthName}`;
 }
 
 export default function TodoCard({ todo, onUpdate, onDelete, onToggleImportant, isDragging }) {
@@ -99,14 +114,12 @@ export default function TodoCard({ todo, onUpdate, onDelete, onToggleImportant, 
         </button>
       </div>
       {todo.description && <p className="card-description">{todo.description}</p>}
-      <div className="card-dates">
-        <span className="start-date">
-          <FiClock size={11} /> {formatDate(todo.startDate)}
-        </span>
-        <span className={`due-date ${isOverdue ? 'overdue-text' : ''}`}>
-          {isOverdue ? <FiAlertCircle size={11} /> : <FiCalendar size={11} />} {formatDate(todo.dueDate)}
-        </span>
-      </div>
+      {todo.dueDate && (
+        <div className={`card-due-date ${isOverdue ? 'overdue-text' : ''}`}>
+          {isOverdue ? <FiAlertCircle size={11} /> : <FiCalendar size={11} />}
+          <span>{formatDueDate(todo.dueDate)}</span>
+        </div>
+      )}
       <div className="card-actions">
         <button onPointerDown={(e) => e.stopPropagation()} onClick={() => setIsEditing(true)} className="edit-btn icon-btn">
           <FiEdit2 size={13} />

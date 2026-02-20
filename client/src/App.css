@@ -367,20 +367,13 @@ body {
   line-height: 1.4;
 }
 
-.card-dates {
-  display: flex;
-  flex-direction: column;
+.card-due-date {
+  display: inline-flex;
+  align-items: center;
   gap: 4px;
   margin-bottom: 10px;
   font-size: 11px;
   color: #888;
-}
-
-.card-dates .start-date,
-.card-dates .due-date {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }
 
 .overdue-text {
