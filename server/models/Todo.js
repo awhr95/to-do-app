@@ -50,6 +50,11 @@ export default function(sequelize) {
       allowNull: false,
       defaultValue: 0,
     },
+    important: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
   }, {
     tableName: 'todos',
     timestamps: true,

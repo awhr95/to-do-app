@@ -302,6 +302,16 @@ body {
   border-left: 3px solid #dc3545;
 }
 
+.todo-card.important {
+  border-left: 3px solid #f59e0b;
+  background: #fffbeb;
+}
+
+.todo-card.important.overdue {
+  border-left: 3px solid #dc3545;
+  background: linear-gradient(to right, #fef2f2 0%, #fffbeb 50%);
+}
+
 .card-header {
   display: flex;
   align-items: center;
@@ -327,6 +337,34 @@ body {
   font-weight: 600;
   color: #333;
   flex: 1;
+}
+
+.important-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: #ccc;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.important-btn:hover {
+  color: #f59e0b;
+  background: #fef3c7;
+}
+
+.important-btn.active {
+  color: #f59e0b;
+}
+
+.important-btn.active:hover {
+  color: #d97706;
 }
 
 .card-description {

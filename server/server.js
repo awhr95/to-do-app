@@ -258,6 +258,24 @@ app.delete('/api/todos/:id', authenticateToken, async (req, res) => {
   }
 });
 
+app.patch('/api/todos/:id/important', authenticateToken, async (req, res) => {
+  try {
+    const todo = await Todo.findOne({
+      where: { id: req.params.id, userId: req.user.id },
+    });
+
+    if (!todo) {
+      return res.status(404).json({ error: 'Todo not found' });
+    }
+
+    await todo.update({ important: !todo.important });
+    res.json(todo);
+  } catch (err) {
+    console.error('Toggle important error:', err);
+    res.status(500).json({ error: 'Failed to toggle important' });
+  }
+});
+
 app.patch('/api/todos/reorder', authenticateToken, async (req, res) => {
   try {
     const { items } = req.body;

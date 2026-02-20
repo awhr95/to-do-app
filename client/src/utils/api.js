@@ -130,3 +130,11 @@ export async function reorderTodos(items) {
   });
   return res.json();
 }
+
+export async function toggleTodoImportant(id) {
+  const res = await fetch(`${API_URL}/todos/${id}/important`, {
+    method: "PATCH",
+    headers: authHeaders(),
+  });
+  return res.json();
+}

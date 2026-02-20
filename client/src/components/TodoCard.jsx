@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FiMoreVertical, FiEdit2, FiTrash2, FiSave, FiX, FiCalendar, FiClock, FiAlertCircle } from 'react-icons/fi';
+import { FiMoreVertical, FiEdit2, FiTrash2, FiSave, FiX, FiCalendar, FiClock, FiAlertCircle, FiStar } from 'react-icons/fi';
 
-export default function TodoCard({ todo, onUpdate, onDelete, isDragging }) {
+export default function TodoCard({ todo, onUpdate, onDelete, onToggleImportant, isDragging }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     title: todo.title,
@@ -77,11 +77,21 @@ export default function TodoCard({ todo, onUpdate, onDelete, isDragging }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`todo-card ${isOverdue ? 'overdue' : ''}`}
+      className={`todo-card ${isOverdue ? 'overdue' : ''} ${todo.important ? 'important' : ''}`}
     >
       <div className="card-header" {...attributes} {...listeners}>
         <FiMoreVertical className="drag-handle" size={16} />
         <h3 className="card-title">{todo.title || 'Untitled'}</h3>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleImportant(todo.id);
+          }}
+          className={`important-btn ${todo.important ? 'active' : ''}`}
+          title={todo.important ? 'Remove importance' : 'Mark as important'}
+        >
+          <FiStar size={14} />
+        </button>
       </div>
       {todo.description && <p className="card-description">{todo.description}</p>}
       <div className="card-dates">

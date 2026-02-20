@@ -104,6 +104,24 @@ export default function KanbanBoard({ user, onLogout }) {
     }
   }
 
+  async function handleToggleImportant(id) {
+    // Optimistic update
+    setTodos(prev =>
+      prev.map(t => (t.id === id ? { ...t, important: !t.important } : t))
+    );
+
+    try {
+      const updated = await api.toggleTodoImportant(id);
+      setTodos(prev => prev.map(t => (t.id === id ? updated : t)));
+    } catch (err) {
+      // Revert on error
+      setTodos(prev =>
+        prev.map(t => (t.id === id ? { ...t, important: !t.important } : t))
+      );
+      console.error('Failed to toggle important:', err);
+    }
+  }
+
   async function handleCreateProject(name) {
     try {
       const project = await api.createProject(name);
@@ -280,6 +298,7 @@ export default function KanbanBoard({ user, onLogout }) {
               todos={todos}
               onUpdate={handleUpdateTodo}
               onDelete={handleDeleteTodo}
+              onToggleImportant={handleToggleImportant}
               onAdd={handleAddTodo}
               activeId={activeId}
               isAddFormOpen={addFormColumn === column.id}
