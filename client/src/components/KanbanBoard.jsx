@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -19,7 +19,8 @@ export default function KanbanBoard({ user, onLogout }) {
   const [todos, setTodos] = useState([]);
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [todosLoading, setTodosLoading] = useState(false);
   const [activeId, setActiveId] = useState(null);
   const [addFormColumn, setAddFormColumn] = useState(null);
 
@@ -55,21 +56,21 @@ export default function KanbanBoard({ user, onLogout }) {
       if (data.length > 0) {
         setSelectedProjectId(data[0].id);
       } else {
-        setLoading(false);
+        setInitialLoading(false);
       }
     } catch (err) {
       if (err.message === 'Unauthorized') {
         onLogout();
       } else {
         console.error('Failed to fetch projects:', err);
-        setLoading(false);
+        setInitialLoading(false);
       }
     }
   }
 
   async function loadTodos() {
     try {
-      setLoading(true);
+      setTodosLoading(true);
       const data = await api.fetchTodos(selectedProjectId);
       setTodos(data);
     } catch (err) {
@@ -79,7 +80,8 @@ export default function KanbanBoard({ user, onLogout }) {
         console.error('Failed to fetch todos:', err);
       }
     } finally {
-      setLoading(false);
+      setTodosLoading(false);
+      setInitialLoading(false);
     }
   }
 
@@ -164,7 +166,7 @@ export default function KanbanBoard({ user, onLogout }) {
     }
   }
 
-  async function handleCreateProject(name) {
+  const handleCreateProject = useCallback(async (name) => {
     try {
       const project = await api.createProject(name);
       setProjects(prev => [...prev, project]);
@@ -172,28 +174,26 @@ export default function KanbanBoard({ user, onLogout }) {
     } catch (err) {
       console.error('Failed to create project:', err);
     }
-  }
+  }, []);
 
-  async function handleUpdateProject(id, name) {
+  const handleUpdateProject = useCallback(async (id, name) => {
     try {
       const updated = await api.updateProject(id, name);
       setProjects(prev => prev.map(p => (p.id === id ? updated : p)));
     } catch (err) {
       console.error('Failed to update project:', err);
     }
-  }
+  }, []);
 
-  async function handleDeleteProject(id) {
+  const handleDeleteProject = useCallback(async (id) => {
     try {
       await api.deleteProject(id);
       setProjects(prev => prev.filter(p => p.id !== id));
-      if (selectedProjectId === id) {
-        setSelectedProjectId(null);
-      }
+      setSelectedProjectId(prev => prev === id ? null : prev);
     } catch (err) {
       console.error('Failed to delete project:', err);
     }
-  }
+  }, []);
 
   function handleDragStart(event) {
     setActiveId(event.active.id);
@@ -290,7 +290,11 @@ export default function KanbanBoard({ user, onLogout }) {
     });
   }
 
-  if (loading) {
+  // Memoize sidebar callbacks to prevent unnecessary re-renders
+  const handleSelectProject = useCallback((id) => setSelectedProjectId(id), []);
+  const handleAddTask = useCallback(() => setAddFormColumn('new'), []);
+
+  if (initialLoading) {
     return <div className="loading">Loading...</div>;
   }
 
@@ -302,12 +306,12 @@ export default function KanbanBoard({ user, onLogout }) {
         user={user}
         projects={projects}
         selectedProjectId={selectedProjectId}
-        onSelect={setSelectedProjectId}
+        onSelect={handleSelectProject}
         onCreate={handleCreateProject}
         onUpdate={handleUpdateProject}
         onDelete={handleDeleteProject}
         onLogout={onLogout}
-        onAddTask={() => setAddFormColumn('new')}
+        onAddTask={handleAddTask}
       />
 
       <div className="board-content">

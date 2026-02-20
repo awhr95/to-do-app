@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import {
   FiPlus,
   FiFolder,
@@ -13,7 +13,7 @@ import {
 } from 'react-icons/fi';
 import '../styles/Sidebar.css';
 
-export default function Sidebar({
+export default memo(function Sidebar({
   user,
   projects,
   selectedProjectId,
@@ -185,4 +185,4 @@ export default function Sidebar({
       </div>
     </aside>
   );
-}
+});
