@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FiChevronDown, FiFolderPlus, FiEdit2, FiTrash2, FiCheck, FiX, FiFolder } from 'react-icons/fi';
+import '../styles/ProjectSelector.css';
 
 export default function ProjectSelector({
   projects,

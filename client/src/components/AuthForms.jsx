@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FiMail, FiLock, FiUser, FiLogIn, FiUserPlus } from 'react-icons/fi';
 import { login, signup, setToken } from '../utils/api';
+import '../styles/Auth.css';
 
 export default function AuthForms({ onLogin }) {
   const [isLogin, setIsLogin] = useState(true);

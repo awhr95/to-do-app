@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import AuthForms from './components/AuthForms';
 import KanbanBoard from './components/KanbanBoard';
 import { getToken, removeToken, getCurrentUser } from './utils/api';
-import './App.css';
+import './styles/App.css';
 
 export default function App() {
   const [user, setUser] = useState(null);

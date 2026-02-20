@@ -1,0 +1,159 @@
+/* Project Selector */
+.project-selector {
+  position: relative;
+}
+
+.project-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  transition: border-color 0.2s;
+}
+
+.project-toggle:hover {
+  border-color: #007bff;
+}
+
+.chevron {
+  transition: transform 0.2s;
+}
+
+.chevron-open {
+  transform: rotate(180deg);
+}
+
+.project-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 220px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.project-option {
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+  color: #333;
+  transition: background 0.15s;
+}
+
+.project-option:hover {
+  background: #f0f2f5;
+}
+
+.project-option.active {
+  background: #e8f0fe;
+  color: #007bff;
+  font-weight: 500;
+}
+
+.project-option-row {
+  display: flex;
+  align-items: center;
+}
+
+.project-option-row .project-option {
+  flex: 1;
+}
+
+.project-option-actions {
+  display: flex;
+  gap: 2px;
+  padding-right: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.project-option-row:hover .project-option-actions {
+  opacity: 1;
+}
+
+.project-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: #666;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.project-icon-btn:hover {
+  background: #e9ecef;
+  color: #333;
+}
+
+.project-icon-btn.danger:hover {
+  background: #f8d7da;
+  color: #dc3545;
+}
+
+.project-edit-form,
+.project-create-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  width: 100%;
+}
+
+.project-edit-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.project-edit-input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.project-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #666;
+  transition: background 0.15s, color 0.15s;
+}
+
+.project-add-btn:hover {
+  background: #f0f2f5;
+  color: #007bff;
+  border-color: #007bff;
+}

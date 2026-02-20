@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { FiEdit2, FiTrash2, FiSave, FiX, FiCalendar, FiAlertCircle, FiStar } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiSave, FiX, FiCalendar, FiAlertCircle, FiStar, FiChevronRight } from 'react-icons/fi';
+import '../styles/TodoCard.css';
+
+const NEXT_STATUS = {
+  'new': 'working',
+  'working': 'complete',
+};
 
 function getOrdinalSuffix(day) {
   if (day > 3 && day < 21) return 'th';
@@ -127,6 +133,16 @@ export default function TodoCard({ todo, onUpdate, onDelete, onToggleImportant, 
         <button onPointerDown={(e) => e.stopPropagation()} onClick={() => onDelete(todo.id)} className="delete-btn icon-btn">
           <FiTrash2 size={13} />
         </button>
+        {NEXT_STATUS[todo.status] && (
+          <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => onUpdate(todo.id, { status: NEXT_STATUS[todo.status] })}
+            className="next-stage-btn icon-btn"
+            title={`Move to ${NEXT_STATUS[todo.status] === 'working' ? 'Working On' : 'Complete'}`}
+          >
+            <FiChevronRight size={15} />
+          </button>
+        )}
       </div>
     </div>
   );

@@ -1,0 +1,145 @@
+/* Kanban Column */
+.kanban-column {
+  background: #e4e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.2s;
+}
+
+.kanban-column.column-over {
+  background: #d0d4da;
+}
+
+.column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 4px 16px;
+}
+
+.column-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.todo-count {
+  background: #c4c9cf;
+  color: #555;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.column-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.column-add-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: #c4c9cf;
+  color: #555;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.column-add-btn:hover {
+  background: #b0b5bc;
+}
+
+.column-add-form {
+  background: white;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.column-form-input,
+.column-form-textarea,
+.column-form-date {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.column-form-input:focus,
+.column-form-textarea:focus,
+.column-form-date:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.column-form-textarea {
+  min-height: 50px;
+  resize: vertical;
+}
+
+.column-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.column-form-submit,
+.column-form-cancel {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.column-form-submit {
+  background: #28a745;
+  color: white;
+}
+
+.column-form-submit:hover {
+  background: #218838;
+}
+
+.column-form-cancel {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.column-form-cancel:hover {
+  background: #dee2e6;
+}
+
+.column-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 100px;
+}
+
+.empty-column {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  border: 2px dashed #c4c9cf;
+  border-radius: 6px;
+  color: #999;
+  font-size: 13px;
+}

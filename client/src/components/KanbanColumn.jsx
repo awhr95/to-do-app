@@ -3,6 +3,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { FiPlus, FiX } from 'react-icons/fi';
 import TodoCard from './TodoCard';
+import '../styles/KanbanColumn.css';
 
 function getToday() {
   return new Date().toISOString().split('T')[0];

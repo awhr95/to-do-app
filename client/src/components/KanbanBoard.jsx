@@ -9,11 +9,11 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
-import { FiPlus, FiX, FiLogOut } from 'react-icons/fi';
 import KanbanColumn from './KanbanColumn';
-import ProjectSelector from './ProjectSelector';
+import Sidebar from './Sidebar';
 import { COLUMNS } from '../utils/constants';
 import * as api from '../utils/api';
+import '../styles/KanbanBoard.css';
 
 export default function KanbanBoard({ user, onLogout }) {
   const [todos, setTodos] = useState([]);
@@ -298,69 +298,57 @@ export default function KanbanBoard({ user, onLogout }) {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>DoNext</h1>
-        <ProjectSelector
-          projects={projects}
-          selectedProjectId={selectedProjectId}
-          onSelect={setSelectedProjectId}
-          onCreate={handleCreateProject}
-          onUpdate={handleUpdateProject}
-          onDelete={handleDeleteProject}
-        />
-        <div className="header-actions">
-          <span className="user-name">Hi, {user.name}</span>
-          <button
-            onClick={() => setAddFormColumn(addFormColumn === 'new' ? null : 'new')}
-            className="add-btn icon-btn"
-          >
-            {addFormColumn === 'new' ? <FiX size={16} /> : <FiPlus size={16} />}
-            <span>{addFormColumn === 'new' ? 'Cancel' : 'Add Task'}</span>
-          </button>
-          <button onClick={onLogout} className="logout-btn icon-btn">
-            <FiLogOut size={16} />
-            <span>Logout</span>
-          </button>
-        </div>
-      </header>
+      <Sidebar
+        user={user}
+        projects={projects}
+        selectedProjectId={selectedProjectId}
+        onSelect={setSelectedProjectId}
+        onCreate={handleCreateProject}
+        onUpdate={handleUpdateProject}
+        onDelete={handleDeleteProject}
+        onLogout={onLogout}
+        onAddTask={() => setAddFormColumn('new')}
+      />
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragOver={handleDragOver}
-      >
-        <div className="kanban-board">
-          {COLUMNS.map(column => (
-            <KanbanColumn
-              key={column.id}
-              column={column}
-              todos={todos}
-              onUpdate={handleUpdateTodo}
-              onDelete={handleDeleteTodo}
-              onToggleImportant={handleToggleImportant}
-              onAdd={handleAddTodo}
-              activeId={activeId}
-              isAddFormOpen={addFormColumn === column.id}
-              onToggleAddForm={setAddFormColumn}
-            />
-          ))}
-        </div>
+      <div className="board-content">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragOver={handleDragOver}
+        >
+          <div className="kanban-board">
+            {COLUMNS.map(column => (
+              <KanbanColumn
+                key={column.id}
+                column={column}
+                todos={todos}
+                onUpdate={handleUpdateTodo}
+                onDelete={handleDeleteTodo}
+                onToggleImportant={handleToggleImportant}
+                onAdd={handleAddTodo}
+                activeId={activeId}
+                isAddFormOpen={addFormColumn === column.id}
+                onToggleAddForm={setAddFormColumn}
+              />
+            ))}
+          </div>
 
-        <DragOverlay>
-          {activeTodo ? (
-            <div className={`todo-card dragging ${activeTodo.important ? 'important' : ''}`}>
-              <div className="card-header">
-                <h3 className="card-title">{activeTodo.title || 'Untitled'}</h3>
+          <DragOverlay>
+            {activeTodo ? (
+              <div className={`todo-card dragging ${activeTodo.important ? 'important' : ''}`}>
+                <div className="card-header">
+                  <h3 className="card-title">{activeTodo.title || 'Untitled'}</h3>
+                </div>
+                {activeTodo.description && (
+                  <p className="card-description">{activeTodo.description}</p>
+                )}
               </div>
-              {activeTodo.description && (
-                <p className="card-description">{activeTodo.description}</p>
-              )}
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      </div>
     </div>
   );
 }

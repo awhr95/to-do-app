@@ -1,0 +1,17 @@
+/* App Container — full-height flex row (sidebar + board content) */
+.app {
+  display: flex;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+/* Board content area — scrollable, fills remaining space */
+.board-content {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: auto;
+  padding: 28px 24px;
+  min-width: 0;
+}
