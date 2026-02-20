@@ -186,7 +186,7 @@ app.get('/api/todos', authenticateToken, async (req, res) => {
     }
     const todos = await Todo.findAll({
       where,
-      order: [['createdAt', 'ASC']],
+      order: [['position', 'ASC'], ['createdAt', 'ASC']],
     });
     res.json(todos);
   } catch (err) {
@@ -198,14 +198,22 @@ app.get('/api/todos', authenticateToken, async (req, res) => {
 app.post('/api/todos', authenticateToken, async (req, res) => {
   try {
     const today = new Date().toISOString().split('T')[0];
+    const status = req.body.status || 'new';
+
+    // Get max position for this status to place new todo at the end
+    const maxPosition = await Todo.max('position', {
+      where: { userId: req.user.id, status },
+    });
+
     const todo = await Todo.create({
       userId: req.user.id,
       title: req.body.title || '',
       description: req.body.description || '',
-      status: req.body.status || 'new',
+      status,
       startDate: today,
       dueDate: req.body.dueDate || today,
       projectId: req.body.projectId || null,
+      position: (maxPosition ?? -1) + 1,
     });
     res.status(201).json(todo);
   } catch (err) {
@@ -247,6 +255,49 @@ app.delete('/api/todos/:id', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Delete todo error:', err);
     res.status(500).json({ error: 'Failed to delete todo' });
+  }
+});
+
+app.patch('/api/todos/reorder', authenticateToken, async (req, res) => {
+  try {
+    const { items } = req.body;
+
+    if (!Array.isArray(items)) {
+      return res.status(400).json({ error: 'items must be an array' });
+    }
+
+    // Validate all items have id and position
+    for (const item of items) {
+      if (typeof item.id !== 'number' || typeof item.position !== 'number') {
+        return res.status(400).json({ error: 'Each item must have id and position as numbers' });
+      }
+    }
+
+    // Verify all todos belong to the user before updating
+    const todoIds = items.map(item => item.id);
+    const userTodos = await Todo.findAll({
+      where: { id: todoIds, userId: req.user.id },
+      attributes: ['id'],
+    });
+
+    if (userTodos.length !== todoIds.length) {
+      return res.status(403).json({ error: 'Some todos not found or not owned by user' });
+    }
+
+    // Bulk update positions
+    await Promise.all(
+      items.map(item =>
+        Todo.update(
+          { position: item.position },
+          { where: { id: item.id, userId: req.user.id } }
+        )
+      )
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Reorder todos error:', err);
+    res.status(500).json({ error: 'Failed to reorder todos' });
   }
 });
 

@@ -8,7 +8,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import { sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
 import { FiPlus, FiX, FiLogOut, FiMoreVertical } from 'react-icons/fi';
 import KanbanColumn from './KanbanColumn';
 import ProjectSelector from './ProjectSelector';
@@ -139,13 +139,31 @@ export default function KanbanBoard({ user, onLogout }) {
     setActiveId(event.active.id);
   }
 
-  function handleDragEnd(event) {
-    const { active } = event;
+  async function handleDragEnd(event) {
+    const { active, over } = event;
     setActiveId(null);
 
+    if (!over) return;
+
     const draggedTodo = todos.find(t => t.id === active.id);
-    if (draggedTodo) {
-      handleUpdateTodo(active.id, { status: draggedTodo.status });
+    if (!draggedTodo) return;
+
+    // Get todos in the same column as the dragged todo (after any status change from handleDragOver)
+    const columnTodos = todos.filter(t => t.status === draggedTodo.status);
+
+    // Persist the status change (handles cross-column moves)
+    await handleUpdateTodo(active.id, { status: draggedTodo.status });
+
+    // Persist the new order within the column
+    const reorderItems = columnTodos.map((todo, index) => ({
+      id: todo.id,
+      position: index,
+    }));
+
+    try {
+      await api.reorderTodos(reorderItems);
+    } catch (err) {
+      console.error('Failed to persist reorder:', err);
     }
   }
 
@@ -156,22 +174,60 @@ export default function KanbanBoard({ user, onLogout }) {
     const draggedTodo = todos.find(t => t.id === active.id);
     if (!draggedTodo) return;
 
-    let targetStatus = null;
-
+    // Check if dropping on a column
     const column = COLUMNS.find(c => c.id === over.id);
     if (column) {
-      targetStatus = column.id;
-    } else {
-      const overTodo = todos.find(t => t.id === over.id);
-      if (overTodo) {
-        targetStatus = overTodo.status;
+      // Cross-column move to an empty column or column header
+      if (draggedTodo.status !== column.id) {
+        setTodos(prev =>
+          prev.map(t => (t.id === active.id ? { ...t, status: column.id } : t))
+        );
       }
+      return;
     }
 
-    if (targetStatus && draggedTodo.status !== targetStatus) {
-      setTodos(prev =>
-        prev.map(t => (t.id === active.id ? { ...t, status: targetStatus } : t))
-      );
+    // Dropping on another todo
+    const overTodo = todos.find(t => t.id === over.id);
+    if (!overTodo) return;
+
+    // Cross-column move (dropping on a todo in a different column)
+    if (draggedTodo.status !== overTodo.status) {
+      setTodos(prev => {
+        const updated = prev.map(t =>
+          t.id === active.id ? { ...t, status: overTodo.status } : t
+        );
+        // Reorder within the new column
+        const columnTodos = updated.filter(t => t.status === overTodo.status);
+        const oldIndex = columnTodos.findIndex(t => t.id === active.id);
+        const newIndex = columnTodos.findIndex(t => t.id === over.id);
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+          const reordered = arrayMove(columnTodos, oldIndex, newIndex);
+          const columnIds = reordered.map(t => t.id);
+          return updated.sort((a, b) => {
+            if (a.status === overTodo.status && b.status === overTodo.status) {
+              return columnIds.indexOf(a.id) - columnIds.indexOf(b.id);
+            }
+            return 0;
+          });
+        }
+        return updated;
+      });
+      return;
+    }
+
+    // Within-column reorder
+    if (active.id !== over.id) {
+      setTodos(prev => {
+        const columnTodos = prev.filter(t => t.status === draggedTodo.status);
+        const otherTodos = prev.filter(t => t.status !== draggedTodo.status);
+        const oldIndex = columnTodos.findIndex(t => t.id === active.id);
+        const newIndex = columnTodos.findIndex(t => t.id === over.id);
+        if (oldIndex !== -1 && newIndex !== -1) {
+          const reordered = arrayMove(columnTodos, oldIndex, newIndex);
+          return [...otherTodos, ...reordered];
+        }
+        return prev;
+      });
     }
   }
 

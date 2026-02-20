@@ -45,6 +45,11 @@ export default function(sequelize) {
         key: 'id',
       },
     },
+    position: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
   }, {
     tableName: 'todos',
     timestamps: true,

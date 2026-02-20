@@ -121,3 +121,12 @@ export async function deleteTodo(id) {
     headers: authHeaders(),
   });
 }
+
+export async function reorderTodos(items) {
+  const res = await fetch(`${API_URL}/todos/reorder`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ items }),
+  });
+  return res.json();
+}
