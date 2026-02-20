@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -22,6 +22,12 @@ export default function KanbanBoard({ user, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState(null);
   const [addFormColumn, setAddFormColumn] = useState(null);
+
+  // Ref to always have access to latest todos (fixes race condition in drag handlers)
+  const todosRef = useRef(todos);
+  useEffect(() => {
+    todosRef.current = todos;
+  }, [todos]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -109,30 +115,52 @@ export default function KanbanBoard({ user, onLogout }) {
   }
 
   async function handleToggleImportant(id) {
-    console.log('[KanbanBoard] handleToggleImportant called with id:', id);
-    const todo = todos.find(t => t.id === id);
-    console.log('[KanbanBoard] Current todo state:', { id: todo?.id, important: todo?.important });
+    const todo = todosRef.current.find(t => t.id === id);
+    if (!todo) return;
 
-    // Optimistic update
-    setTodos(prev => {
-      const updated = prev.map(t => (t.id === id ? { ...t, important: !t.important } : t));
-      const updatedTodo = updated.find(t => t.id === id);
-      console.log('[KanbanBoard] Optimistic update - new important value:', updatedTodo?.important);
-      return updated;
-    });
+    const newImportant = !todo.important;
 
-    try {
-      console.log('[KanbanBoard] Calling API toggleTodoImportant...');
-      const result = await api.toggleTodoImportant(id);
-      console.log('[KanbanBoard] API response:', result);
-      // Trust the optimistic update - don't replace with server response
-    } catch (err) {
-      // Revert on error
-      console.error('[KanbanBoard] API error, reverting:', err);
-      setTodos(prev =>
-        prev.map(t => (t.id === id ? { ...t, important: !t.important } : t))
-      );
-      console.error('Failed to toggle important:', err);
+    // If starring (not unstarring), bump to top of column
+    if (newImportant) {
+      // Set position to -1 to sort to top, then normalize positions
+      setTodos(prev => {
+        const updated = prev.map(t =>
+          t.id === id ? { ...t, important: true, position: -1 } : t
+        );
+        // Normalize positions within the column
+        const columnTodos = updated
+          .filter(t => t.status === todo.status)
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        const normalizedIds = columnTodos.map((t, i) => ({ id: t.id, position: i }));
+        return updated.map(t => {
+          const norm = normalizedIds.find(n => n.id === t.id);
+          return norm ? { ...t, position: norm.position } : t;
+        });
+      });
+
+      // Persist to server
+      try {
+        await api.toggleTodoImportant(id);
+        // Also persist the new positions
+        const columnTodos = todosRef.current
+          .filter(t => t.status === todo.status)
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+        const reorderItems = columnTodos.map((t, i) => ({ id: t.id, position: i }));
+        await api.reorderTodos(reorderItems);
+      } catch (err) {
+        console.error('Failed to toggle important:', err);
+        // Revert on error
+        setTodos(prev => prev.map(t => (t.id === id ? { ...t, important: false } : t)));
+      }
+    } else {
+      // Just unstar, don't change position
+      setTodos(prev => prev.map(t => (t.id === id ? { ...t, important: false } : t)));
+      try {
+        await api.toggleTodoImportant(id);
+      } catch (err) {
+        console.error('Failed to toggle important:', err);
+        setTodos(prev => prev.map(t => (t.id === id ? { ...t, important: true } : t)));
+      }
     }
   }
 
@@ -173,41 +201,38 @@ export default function KanbanBoard({ user, onLogout }) {
 
   async function handleDragEnd(event) {
     const { active, over } = event;
-    console.log('[KanbanBoard] handleDragEnd - active:', active?.id, 'over:', over?.id);
     setActiveId(null);
 
-    if (!over) {
-      console.log('[KanbanBoard] handleDragEnd - no over target, returning');
-      return;
-    }
+    if (!over) return;
 
-    const draggedTodo = todos.find(t => t.id === active.id);
-    if (!draggedTodo) {
-      console.log('[KanbanBoard] handleDragEnd - dragged todo not found');
-      return;
-    }
+    // Use ref to get latest state (fixes race condition with fast drags)
+    const currentTodos = todosRef.current;
+    const draggedTodo = currentTodos.find(t => t.id === active.id);
+    if (!draggedTodo) return;
 
-    console.log('[KanbanBoard] handleDragEnd - draggedTodo:', { id: draggedTodo.id, status: draggedTodo.status });
+    // Get todos in the same column (using latest state)
+    const columnTodos = currentTodos.filter(t => t.status === draggedTodo.status);
 
-    // Get todos in the same column as the dragged todo (after any status change from handleDragOver)
-    const columnTodos = todos.filter(t => t.status === draggedTodo.status);
-    console.log('[KanbanBoard] handleDragEnd - columnTodos order:', columnTodos.map(t => ({ id: t.id, position: t.position })));
-
-    // Persist the status change (handles cross-column moves)
-    await handleUpdateTodo(active.id, { status: draggedTodo.status });
-
-    // Persist the new order within the column
+    // Build reorder items from current array order
     const reorderItems = columnTodos.map((todo, index) => ({
       id: todo.id,
       position: index,
     }));
-    console.log('[KanbanBoard] handleDragEnd - reorderItems to send:', reorderItems);
 
+    // Update local state with normalized positions
+    setTodos(prev => prev.map(t => {
+      const item = reorderItems.find(r => r.id === t.id);
+      return item ? { ...t, position: item.position } : t;
+    }));
+
+    // Persist to server
     try {
-      const result = await api.reorderTodos(reorderItems);
-      console.log('[KanbanBoard] handleDragEnd - reorder API response:', result);
+      await api.updateTodo(active.id, { status: draggedTodo.status });
+      await api.reorderTodos(reorderItems);
     } catch (err) {
-      console.error('[KanbanBoard] handleDragEnd - reorder failed:', err);
+      console.error('Failed to persist drag:', err);
+      // Reload on error to get correct state
+      loadTodos();
     }
   }
 
@@ -215,53 +240,42 @@ export default function KanbanBoard({ user, onLogout }) {
     const { active, over } = event;
     if (!over) return;
 
-    const draggedTodo = todos.find(t => t.id === active.id);
-    if (!draggedTodo) return;
+    // Use functional update to always work with latest state
+    setTodos(prev => {
+      const draggedTodo = prev.find(t => t.id === active.id);
+      if (!draggedTodo) return prev;
 
-    // Check if dropping on a column
-    const column = COLUMNS.find(c => c.id === over.id);
-    if (column) {
-      // Cross-column move to an empty column or column header
-      if (draggedTodo.status !== column.id) {
-        setTodos(prev =>
-          prev.map(t => (t.id === active.id ? { ...t, status: column.id } : t))
-        );
+      // Check if dropping on a column
+      const column = COLUMNS.find(c => c.id === over.id);
+      if (column) {
+        if (draggedTodo.status !== column.id) {
+          return prev.map(t => (t.id === active.id ? { ...t, status: column.id } : t));
+        }
+        return prev;
       }
-      return;
-    }
 
-    // Dropping on another todo
-    const overTodo = todos.find(t => t.id === over.id);
-    if (!overTodo) return;
+      // Dropping on another todo
+      const overTodo = prev.find(t => t.id === over.id);
+      if (!overTodo) return prev;
 
-    // Cross-column move (dropping on a todo in a different column)
-    if (draggedTodo.status !== overTodo.status) {
-      setTodos(prev => {
+      // Cross-column move
+      if (draggedTodo.status !== overTodo.status) {
         const updated = prev.map(t =>
           t.id === active.id ? { ...t, status: overTodo.status } : t
         );
-        // Reorder within the new column
         const columnTodos = updated.filter(t => t.status === overTodo.status);
         const oldIndex = columnTodos.findIndex(t => t.id === active.id);
         const newIndex = columnTodos.findIndex(t => t.id === over.id);
         if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
           const reordered = arrayMove(columnTodos, oldIndex, newIndex);
-          const columnIds = reordered.map(t => t.id);
-          return updated.sort((a, b) => {
-            if (a.status === overTodo.status && b.status === overTodo.status) {
-              return columnIds.indexOf(a.id) - columnIds.indexOf(b.id);
-            }
-            return 0;
-          });
+          const otherTodos = updated.filter(t => t.status !== overTodo.status);
+          return [...otherTodos, ...reordered];
         }
         return updated;
-      });
-      return;
-    }
+      }
 
-    // Within-column reorder
-    if (active.id !== over.id) {
-      setTodos(prev => {
+      // Within-column reorder
+      if (active.id !== over.id) {
         const columnTodos = prev.filter(t => t.status === draggedTodo.status);
         const otherTodos = prev.filter(t => t.status !== draggedTodo.status);
         const oldIndex = columnTodos.findIndex(t => t.id === active.id);
@@ -270,9 +284,10 @@ export default function KanbanBoard({ user, onLogout }) {
           const reordered = arrayMove(columnTodos, oldIndex, newIndex);
           return [...otherTodos, ...reordered];
         }
-        return prev;
-      });
-    }
+      }
+
+      return prev;
+    });
   }
 
   if (loading) {

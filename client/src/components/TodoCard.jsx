@@ -91,10 +91,7 @@ export default function TodoCard({ todo, onUpdate, onDelete, onToggleImportant, 
         <h3 className="card-title">{todo.title || 'Untitled'}</h3>
         <button
           onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => {
-            console.log('[TodoCard] Star clicked for todo:', todo.id, 'current important:', todo.important);
-            onToggleImportant(todo.id);
-          }}
+          onClick={() => onToggleImportant(todo.id)}
           className={`important-btn ${todo.important ? 'active' : ''}`}
           title={todo.important ? 'Remove importance' : 'Mark as important'}
         >

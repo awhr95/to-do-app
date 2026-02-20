@@ -259,47 +259,34 @@ app.delete('/api/todos/:id', authenticateToken, async (req, res) => {
 });
 
 app.patch('/api/todos/:id/important', authenticateToken, async (req, res) => {
-  console.log('[Server] PATCH /api/todos/:id/important - id:', req.params.id, 'userId:', req.user.id);
   try {
     const todo = await Todo.findOne({
       where: { id: req.params.id, userId: req.user.id },
     });
 
-    console.log('[Server] Found todo:', todo ? { id: todo.id, important: todo.important } : 'null');
-
     if (!todo) {
-      console.log('[Server] Todo not found, returning 404');
       return res.status(404).json({ error: 'Todo not found' });
     }
 
-    const newImportant = !todo.important;
-    console.log('[Server] Toggling important from', todo.important, 'to', newImportant);
-    await todo.update({ important: newImportant });
-    console.log('[Server] After update, todo.important:', todo.important);
+    await todo.update({ important: !todo.important });
     res.json(todo);
   } catch (err) {
-    console.error('[Server] Toggle important error:', err);
+    console.error('Toggle important error:', err);
     res.status(500).json({ error: 'Failed to toggle important' });
   }
 });
 
 app.patch('/api/todos/reorder', authenticateToken, async (req, res) => {
-  console.log('[Server] PATCH /api/todos/reorder - userId:', req.user.id);
-  console.log('[Server] Request body:', JSON.stringify(req.body));
   try {
     const { items } = req.body;
 
     if (!Array.isArray(items)) {
-      console.log('[Server] items is not an array');
       return res.status(400).json({ error: 'items must be an array' });
     }
-
-    console.log('[Server] Reorder items:', items);
 
     // Validate all items have id and position
     for (const item of items) {
       if (typeof item.id !== 'number' || typeof item.position !== 'number') {
-        console.log('[Server] Invalid item:', item);
         return res.status(400).json({ error: 'Each item must have id and position as numbers' });
       }
     }
@@ -311,15 +298,11 @@ app.patch('/api/todos/reorder', authenticateToken, async (req, res) => {
       attributes: ['id'],
     });
 
-    console.log('[Server] Found', userTodos.length, 'of', todoIds.length, 'todos belonging to user');
-
     if (userTodos.length !== todoIds.length) {
-      console.log('[Server] Mismatch - some todos not found or not owned');
       return res.status(403).json({ error: 'Some todos not found or not owned by user' });
     }
 
     // Bulk update positions
-    console.log('[Server] Updating positions...');
     await Promise.all(
       items.map(item =>
         Todo.update(
@@ -329,10 +312,9 @@ app.patch('/api/todos/reorder', authenticateToken, async (req, res) => {
       )
     );
 
-    console.log('[Server] Reorder complete');
     res.json({ success: true });
   } catch (err) {
-    console.error('[Server] Reorder todos error:', err);
+    console.error('Reorder todos error:', err);
     res.status(500).json({ error: 'Failed to reorder todos' });
   }
 });

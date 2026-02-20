@@ -123,25 +123,18 @@ export async function deleteTodo(id) {
 }
 
 export async function reorderTodos(items) {
-  console.log('[API] reorderTodos called with items:', items);
   const res = await fetch(`${API_URL}/todos/reorder`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ items }),
   });
-  const data = await res.json();
-  console.log('[API] reorderTodos response status:', res.status, 'data:', data);
-  return data;
+  return res.json();
 }
 
 export async function toggleTodoImportant(id) {
-  console.log('[API] toggleTodoImportant called with id:', id);
-  console.log('[API] Fetching URL:', `${API_URL}/todos/${id}/important`);
   const res = await fetch(`${API_URL}/todos/${id}/important`, {
     method: "PATCH",
     headers: authHeaders(),
   });
-  const data = await res.json();
-  console.log('[API] toggleTodoImportant response status:', res.status, 'data:', data);
-  return data;
+  return res.json();
 }

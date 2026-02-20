@@ -19,15 +19,10 @@ export default function KanbanColumn({
   isAddFormOpen,
   onToggleAddForm,
 }) {
-  // Filter by column and sort: important first, then by position
+  // Filter by column and sort by position only (star is just visual, doesn't affect order)
   const columnTodos = todos
     .filter(t => t.status === column.id)
-    .sort((a, b) => {
-      if (a.important !== b.important) {
-        return a.important ? -1 : 1;
-      }
-      return (a.position ?? 0) - (b.position ?? 0);
-    });
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const [newTask, setNewTask] = useState({
     title: '',
