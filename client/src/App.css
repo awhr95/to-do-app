@@ -317,18 +317,22 @@ body {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
-  cursor: grab;
-}
-
-.card-header:active {
-  cursor: grabbing;
 }
 
 .drag-handle {
+  display: flex;
+  align-items: center;
   color: #999;
   font-size: 14px;
   user-select: none;
   flex-shrink: 0;
+  cursor: grab;
+  padding: 2px;
+  margin: -2px;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 .card-title {

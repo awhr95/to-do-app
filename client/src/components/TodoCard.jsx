@@ -79,14 +79,13 @@ export default function TodoCard({ todo, onUpdate, onDelete, onToggleImportant, 
       style={style}
       className={`todo-card ${isOverdue ? 'overdue' : ''} ${todo.important ? 'important' : ''}`}
     >
-      <div className="card-header" {...attributes} {...listeners}>
-        <FiMoreVertical className="drag-handle" size={16} />
+      <div className="card-header">
+        <span className="drag-handle" {...attributes} {...listeners}>
+          <FiMoreVertical size={16} />
+        </span>
         <h3 className="card-title">{todo.title || 'Untitled'}</h3>
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleImportant(todo.id);
-          }}
+          onClick={() => onToggleImportant(todo.id)}
           className={`important-btn ${todo.important ? 'active' : ''}`}
           title={todo.important ? 'Remove importance' : 'Mark as important'}
         >
