@@ -1,4 +1,5 @@
 import { useState, memo } from 'react';
+import { useDroppable } from '@dnd-kit/core';
 import {
   FiPlus,
   FiFolder,
@@ -13,6 +14,142 @@ import {
 } from 'react-icons/fi';
 import '../styles/Sidebar.css';
 
+// Separate component to use useDroppable hook per project
+function DroppableProjectItem({
+  project,
+  isSelected,
+  isCurrentProject,
+  isDragging,
+  isEditing,
+  editName,
+  setEditName,
+  onSelect,
+  onStartEditing,
+  onUpdate,
+  onDelete,
+  onCancelEdit,
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `project-${project.id}`,
+  });
+
+  // Highlight when dragging over, but not if it's the todo's current project
+  const isValidDropTarget = isOver && !isCurrentProject;
+
+  // Determine styles based on state
+  let rowStyle;
+  let buttonStyle;
+
+  if (isValidDropTarget) {
+    rowStyle = {
+      background: 'var(--color-primary)',
+      borderRadius: '6px',
+      boxShadow: '0 0 0 2px var(--color-primary-light)',
+    };
+    buttonStyle = { color: 'white' };
+  } else if (isCurrentProject && isDragging) {
+    // Grey out the task's current project while dragging
+    rowStyle = {
+      opacity: 0.4,
+      cursor: 'not-allowed',
+    };
+    buttonStyle = {
+      color: '#6b7280',
+      cursor: 'not-allowed',
+    };
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      className="sidebar-project-row"
+      style={rowStyle}
+    >
+      {isEditing ? (
+        <form
+          className="sidebar-edit-form"
+          onSubmit={(e) => { e.preventDefault(); onUpdate(project.id); }}
+        >
+          <input
+            type="text"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            className="sidebar-edit-input"
+            autoFocus
+          />
+          <button type="submit" className="sidebar-icon-btn" title="Save">
+            <FiCheck size={13} />
+          </button>
+          <button
+            type="button"
+            className="sidebar-icon-btn"
+            title="Cancel"
+            onClick={onCancelEdit}
+          >
+            <FiX size={13} />
+          </button>
+        </form>
+      ) : (
+        <>
+          <button
+            className={`sidebar-nav-item ${isSelected ? 'active' : ''}`}
+            onClick={() => onSelect(project.id)}
+            style={buttonStyle}
+          >
+            <FiFolder size={15} />
+            <span>{project.name}</span>
+          </button>
+          <div className="sidebar-project-actions">
+            <button
+              className="sidebar-icon-btn"
+              title="Rename"
+              onClick={() => onStartEditing(project)}
+            >
+              <FiEdit2 size={12} />
+            </button>
+            <button
+              className="sidebar-icon-btn danger"
+              title="Delete"
+              onClick={() => onDelete(project.id)}
+            >
+              <FiTrash2 size={12} />
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Droppable wrapper for the New Project button
+function DroppableNewProjectButton({ isDragging, onClick }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'project-new',
+  });
+
+  const isValidDropTarget = isOver && isDragging;
+
+  const style = isValidDropTarget ? {
+    background: 'var(--color-primary)',
+    borderRadius: '6px',
+    boxShadow: '0 0 0 2px var(--color-primary-light)',
+    color: 'white',
+    borderColor: 'var(--color-primary)',
+  } : undefined;
+
+  return (
+    <button
+      ref={setNodeRef}
+      className="sidebar-new-project-btn"
+      onClick={onClick}
+      style={style}
+    >
+      <FiFolderPlus size={14} />
+      <span>{isValidDropTarget ? 'Drop to create project' : 'New Project'}</span>
+    </button>
+  );
+}
+
 export default memo(function Sidebar({
   user,
   projects,
@@ -25,6 +162,7 @@ export default memo(function Sidebar({
   onAddTask,
   mode,
   onToggleMode,
+  draggedTodoProjectId,
 }) {
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState('');
@@ -96,59 +234,21 @@ export default memo(function Sidebar({
 
         {/* Project list */}
         {projects.map((project) => (
-          <div key={project.id} className="sidebar-project-row">
-            {editingId === project.id ? (
-              <form
-                className="sidebar-edit-form"
-                onSubmit={(e) => { e.preventDefault(); handleUpdate(project.id); }}
-              >
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="sidebar-edit-input"
-                  autoFocus
-                />
-                <button type="submit" className="sidebar-icon-btn" title="Save">
-                  <FiCheck size={13} />
-                </button>
-                <button
-                  type="button"
-                  className="sidebar-icon-btn"
-                  title="Cancel"
-                  onClick={() => setEditingId(null)}
-                >
-                  <FiX size={13} />
-                </button>
-              </form>
-            ) : (
-              <>
-                <button
-                  className={`sidebar-nav-item ${selectedProjectId === project.id ? 'active' : ''}`}
-                  onClick={() => onSelect(project.id)}
-                >
-                  <FiFolder size={15} />
-                  <span>{project.name}</span>
-                </button>
-                <div className="sidebar-project-actions">
-                  <button
-                    className="sidebar-icon-btn"
-                    title="Rename"
-                    onClick={() => startEditing(project)}
-                  >
-                    <FiEdit2 size={12} />
-                  </button>
-                  <button
-                    className="sidebar-icon-btn danger"
-                    title="Delete"
-                    onClick={() => handleDelete(project.id)}
-                  >
-                    <FiTrash2 size={12} />
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          <DroppableProjectItem
+            key={project.id}
+            project={project}
+            isSelected={selectedProjectId === project.id}
+            isCurrentProject={draggedTodoProjectId === project.id}
+            isDragging={draggedTodoProjectId !== undefined}
+            isEditing={editingId === project.id}
+            editName={editName}
+            setEditName={setEditName}
+            onSelect={onSelect}
+            onStartEditing={startEditing}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
+            onCancelEdit={() => setEditingId(null)}
+          />
         ))}
 
         {/* New project */}
@@ -175,13 +275,10 @@ export default memo(function Sidebar({
             </button>
           </form>
         ) : (
-          <button
-            className="sidebar-new-project-btn"
+          <DroppableNewProjectButton
+            isDragging={draggedTodoProjectId !== undefined}
             onClick={() => setIsCreating(true)}
-          >
-            <FiFolderPlus size={14} />
-            <span>New Project</span>
-          </button>
+          />
         )}
       </nav>
 

@@ -39,8 +39,10 @@ export default function useProjects(onLogout, activeMode) {
       const project = await api.createProject(name, mode);
       setAllProjects(prev => [...prev, project]);
       setSelectedProjectId(project.id);
+      return project;
     } catch (err) {
       console.error('Failed to create project:', err);
+      return null;
     }
   }, []);
 
