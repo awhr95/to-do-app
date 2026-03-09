@@ -37,19 +37,25 @@ function DroppableProjectItem({
   const isValidDropTarget = isOver && !isCurrentProject;
 
   // Determine styles based on state
-  let rowStyle;
+  // Always reserve space for left border to prevent layout shift
+  let rowStyle = {
+    borderLeft: '3px solid transparent',
+    transition: 'border-color 0.15s ease',
+  };
   let buttonStyle;
 
   if (isValidDropTarget) {
     rowStyle = {
-      background: 'var(--color-primary)',
-      borderRadius: '6px',
-      boxShadow: '0 0 0 2px var(--color-primary-light)',
+      ...rowStyle,
+      borderLeft: '3px solid var(--color-primary)',
+      background: 'var(--color-sidebar-active-bg)',
+      borderRadius: '0 6px 6px 0',
     };
-    buttonStyle = { color: 'white' };
+    buttonStyle = { color: 'var(--color-primary-light)' };
   } else if (isCurrentProject && isDragging) {
     // Grey out the task's current project while dragging
     rowStyle = {
+      ...rowStyle,
       opacity: 0.4,
       cursor: 'not-allowed',
     };
