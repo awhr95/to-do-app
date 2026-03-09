@@ -159,7 +159,7 @@
 .edit-input:focus,
 .edit-textarea:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: var(--color-primary);
 }
 
 .edit-textarea {

@@ -85,7 +85,7 @@
 .column-form-textarea:focus,
 .column-form-date:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: var(--color-primary);
 }
 
 .column-form-textarea {

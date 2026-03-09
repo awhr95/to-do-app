@@ -14,12 +14,15 @@ import Sidebar from './Sidebar';
 import { COLUMNS } from '../utils/constants';
 import useTodos from '../hooks/useTodos';
 import useProjects from '../hooks/useProjects';
+import useMode from '../hooks/useMode';
 import * as api from '../utils/api';
 import '../styles/KanbanBoard.css';
 
 export default function KanbanBoard({ user, onLogout }) {
   const [activeId, setActiveId] = useState(null);
   const [addFormColumn, setAddFormColumn] = useState(null);
+
+  const { mode, toggleMode } = useMode();
 
   const {
     projects,
@@ -28,7 +31,7 @@ export default function KanbanBoard({ user, onLogout }) {
     createProject,
     updateProject,
     deleteProject,
-  } = useProjects(onLogout);
+  } = useProjects(onLogout, mode);
 
   const {
     todos,
@@ -40,7 +43,7 @@ export default function KanbanBoard({ user, onLogout }) {
     deleteTodo,
     toggleImportant,
     loadTodos,
-  } = useTodos(selectedProjectId, onLogout);
+  } = useTodos(selectedProjectId, onLogout, mode);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -160,6 +163,8 @@ export default function KanbanBoard({ user, onLogout }) {
         onDelete={deleteProject}
         onLogout={onLogout}
         onAddTask={handleAddTask}
+        mode={mode}
+        onToggleMode={toggleMode}
       />
 
       <div className="board-content">

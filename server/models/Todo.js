@@ -55,6 +55,11 @@ export default function(sequelize) {
       allowNull: false,
       defaultValue: false,
     },
+    mode: {
+      type: DataTypes.ENUM('work', 'life'),
+      allowNull: false,
+      defaultValue: 'work',
+    },
   }, {
     tableName: 'todos',
     timestamps: true,

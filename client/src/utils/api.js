@@ -60,20 +60,20 @@ export async function fetchProjects() {
   return res.json();
 }
 
-export async function createProject(name) {
+export async function createProject(name, mode = 'work') {
   const res = await fetch(`${API_URL}/projects`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, mode }),
   });
   return res.json();
 }
 
-export async function updateProject(id, name) {
+export async function updateProject(id, updates) {
   const res = await fetch(`${API_URL}/projects/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(updates),
   });
   return res.json();
 }
@@ -86,9 +86,12 @@ export async function deleteProject(id) {
 }
 
 // Todos API
-export async function fetchTodos(projectId) {
-  const params = projectId ? `?projectId=${projectId}` : '';
-  const res = await fetch(`${API_URL}/todos${params}`, {
+export async function fetchTodos(projectId, mode) {
+  const params = new URLSearchParams();
+  if (projectId) params.set('projectId', projectId);
+  if (mode) params.set('mode', mode);
+  const queryString = params.toString();
+  const res = await fetch(`${API_URL}/todos${queryString ? `?${queryString}` : ''}`, {
     headers: authHeaders(),
   });
   if (res.status === 401 || res.status === 403) {

@@ -19,7 +19,7 @@
 }
 
 .project-toggle:hover {
-  border-color: #007bff;
+  border-color: var(--color-primary);
 }
 
 .chevron {
@@ -65,7 +65,7 @@
 
 .project-option.active {
   background: #e8f0fe;
-  color: #007bff;
+  color: var(--color-primary);
   font-weight: 500;
 }
 
@@ -134,7 +134,7 @@
 
 .project-edit-input:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: var(--color-primary);
 }
 
 .project-add-btn {
@@ -154,6 +154,6 @@
 
 .project-add-btn:hover {
   background: #f0f2f5;
-  color: #007bff;
-  border-color: #007bff;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }

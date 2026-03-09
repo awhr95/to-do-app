@@ -19,6 +19,11 @@ export default function(sequelize) {
       type: DataTypes.STRING(255),
       allowNull: false,
     },
+    mode: {
+      type: DataTypes.ENUM('work', 'life'),
+      allowNull: false,
+      defaultValue: 'work',
+    },
   }, {
     tableName: 'projects',
     timestamps: true,

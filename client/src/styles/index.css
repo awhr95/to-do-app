@@ -1,3 +1,25 @@
+/* Theme Custom Properties */
+:root,
+:root[data-mode="work"] {
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #60a5fa;
+  --color-primary-bg: #e8f0fe;
+  --color-sidebar-bg: #1a1d23;
+  --color-sidebar-active-bg: #252930;
+  --color-sidebar-active-text: #60a5fa;
+}
+
+:root[data-mode="life"] {
+  --color-primary: #22c55e;
+  --color-primary-hover: #16a34a;
+  --color-primary-light: #4ade80;
+  --color-primary-bg: #dcfce7;
+  --color-sidebar-bg: #14201a;
+  --color-sidebar-active-bg: #1a2f23;
+  --color-sidebar-active-text: #4ade80;
+}
+
 /* Global Resets & Base Styles */
 *, *::before, *::after {
   box-sizing: border-box;

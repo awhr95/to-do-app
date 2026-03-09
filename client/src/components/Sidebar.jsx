@@ -23,6 +23,8 @@ export default memo(function Sidebar({
   onDelete,
   onLogout,
   onAddTask,
+  mode,
+  onToggleMode,
 }) {
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState('');
@@ -32,14 +34,14 @@ export default memo(function Sidebar({
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!newName.trim()) return;
-    await onCreate(newName.trim());
+    await onCreate(newName.trim(), mode);
     setNewName('');
     setIsCreating(false);
   };
 
   const handleUpdate = async (id) => {
     if (!editName.trim()) return;
-    await onUpdate(id, editName.trim());
+    await onUpdate(id, { name: editName.trim() });
     setEditingId(null);
     setEditName('');
   };
@@ -59,6 +61,18 @@ export default memo(function Sidebar({
       <div className="sidebar-logo">
         <span className="sidebar-logo-icon">✓</span>
         <span className="sidebar-logo-text">DoNext</span>
+      </div>
+
+      {/* Mode Toggle */}
+      <div className="mode-toggle">
+        <span className={`mode-label ${mode === 'work' ? 'active' : ''}`}>Work</span>
+        <button
+          className="toggle-switch"
+          data-mode={mode}
+          onClick={onToggleMode}
+          aria-label={`Switch to ${mode === 'work' ? 'life' : 'work'} mode`}
+        />
+        <span className={`mode-label ${mode === 'life' ? 'active' : ''}`}>Life</span>
       </div>
 
       {/* Add Task button */}

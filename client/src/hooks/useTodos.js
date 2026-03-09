@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import * as api from '../utils/api';
 
-export default function useTodos(selectedProjectId, onLogout) {
+export default function useTodos(selectedProjectId, onLogout, mode) {
   const [todos, setTodos] = useState([]);
   const [todosLoading, setTodosLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -15,7 +15,7 @@ export default function useTodos(selectedProjectId, onLogout) {
   const loadTodos = useCallback(async () => {
     try {
       setTodosLoading(true);
-      const data = await api.fetchTodos(selectedProjectId);
+      const data = await api.fetchTodos(selectedProjectId, mode);
       setTodos(data);
     } catch (err) {
       if (err.message === 'Unauthorized') {
@@ -27,7 +27,7 @@ export default function useTodos(selectedProjectId, onLogout) {
       setTodosLoading(false);
       setInitialLoading(false);
     }
-  }, [selectedProjectId, onLogout]);
+  }, [selectedProjectId, onLogout, mode]);
 
   useEffect(() => {
     loadTodos();
@@ -38,13 +38,14 @@ export default function useTodos(selectedProjectId, onLogout) {
       const todo = await api.createTodo({
         ...todoData,
         projectId: selectedProjectId,
+        mode,
       });
       setTodos(prev => [...prev, todo]);
       return todo;
     } catch (err) {
       console.error('Failed to add todo:', err);
     }
-  }, [selectedProjectId]);
+  }, [selectedProjectId, mode]);
 
   const updateTodo = useCallback(async (id, updates) => {
     try {

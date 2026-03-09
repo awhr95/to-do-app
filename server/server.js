@@ -127,13 +127,14 @@ app.get('/api/projects', authenticateToken, async (req, res) => {
 
 app.post('/api/projects', authenticateToken, async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, mode } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'Project name is required' });
     }
     const project = await Project.create({
       userId: req.user.id,
       name: name.trim(),
+      mode: mode || 'work',
     });
     res.status(201).json(project);
   } catch (err) {
@@ -150,11 +151,15 @@ app.put('/api/projects/:id', authenticateToken, async (req, res) => {
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }
-    const { name } = req.body;
+    const { name, mode } = req.body;
     if (!name || !name.trim()) {
       return res.status(400).json({ error: 'Project name is required' });
     }
-    await project.update({ name: name.trim() });
+    const updates = { name: name.trim() };
+    if (mode && ['work', 'life'].includes(mode)) {
+      updates.mode = mode;
+    }
+    await project.update(updates);
     res.json(project);
   } catch (err) {
     console.error('Update project error:', err);
@@ -184,10 +189,31 @@ app.get('/api/todos', authenticateToken, async (req, res) => {
     if (req.query.projectId) {
       where.projectId = req.query.projectId;
     }
-    const todos = await Todo.findAll({
+
+    const queryOptions = {
       where,
       order: [['position', 'ASC'], ['createdAt', 'ASC']],
-    });
+    };
+
+    // If mode is specified, filter todos by mode
+    // Include todos where: project has matching mode OR orphan todos with matching mode
+    if (req.query.mode) {
+      const { Op } = await import('sequelize');
+      where[Op.or] = [
+        // Todos with a project that has the matching mode
+        { '$project.mode$': req.query.mode },
+        // Orphan todos (no project) with matching mode
+        { projectId: null, mode: req.query.mode },
+      ];
+      queryOptions.include = [{
+        model: Project,
+        as: 'project',
+        attributes: [],
+        required: false, // LEFT JOIN to include orphan todos
+      }];
+    }
+
+    const todos = await Todo.findAll(queryOptions);
     res.json(todos);
   } catch (err) {
     console.error('Get todos error:', err);
@@ -213,6 +239,7 @@ app.post('/api/todos', authenticateToken, async (req, res) => {
       startDate: today,
       dueDate: req.body.dueDate || today,
       projectId: req.body.projectId || null,
+      mode: req.body.mode || 'work',
       position: (maxPosition ?? -1) + 1,
     });
     res.status(201).json(todo);
